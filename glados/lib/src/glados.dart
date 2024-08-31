@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:meta/meta.dart';
+import 'package:spec/spec.dart' as spec_package;
 import 'package:test/test.dart' as test_package;
 
 import 'any.dart';
@@ -36,6 +37,23 @@ class ExploreConfig {
   /// deterministic.
   final Random random;
 }
+
+enum TestFramework {
+  test,
+  spec,
+}
+
+typedef _TestFn = void Function(
+  Object? description,
+  dynamic Function() body, {
+  String? testOn,
+  test_package.Timeout? timeout,
+  Object? skip,
+  Object? tags,
+  Map<String, dynamic>? onPlatform,
+  int? retry,
+  bool solo,
+});
 
 /// The entrypoint for [Glados] testing.
 ///
@@ -104,12 +122,20 @@ class ExploreConfig {
 /// To customize the exploration phase, provide an [ExploreConfig] configuration.
 /// See the [ExploreConfig] doc comments for more information.
 class Glados<T> {
-  Glados([Generator<T>? generator, ExploreConfig? explore])
-      : generator = generator ?? Any.defaultForWithBeautifulError<T>(1, 0),
-        explore = explore ?? ExploreConfig();
+  Glados([
+    Generator<T>? generator,
+    ExploreConfig? explore,
+    TestFramework framework = TestFramework.spec,
+  ])  : generator = generator ?? Any.defaultForWithBeautifulError<T>(1, 0),
+        explore = explore ?? ExploreConfig(),
+        _testFn = switch (framework) {
+          TestFramework.test => test_package.test,
+          TestFramework.spec => spec_package.test,
+        };
 
   final Generator<T> generator;
   final ExploreConfig explore;
+  final _TestFn _testFn;
 
   /// Executes the given body with a bunch of parameters, trying to break it.
   @isTest
@@ -163,7 +189,7 @@ class Glados<T> {
       return input.value;
     }
 
-    test_package.test(
+    _testFn(
       '$description (testing ${explore.numRuns} '
       '${explore.numRuns == 1 ? 'input' : 'inputs'})',
       () async {
