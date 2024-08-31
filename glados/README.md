@@ -31,7 +31,7 @@ dev_dependencies:
   glados: ...
 ```
 
-Use `Glados<...>().test(...)` instead of the traditional `test(...)`.
+Use `Glados<...>().test(...)` instead of the traditional `test(...)`. By default, `glados_spec` will use `spec` as the testing framework, but you can switch it back to `test` in the constructor.
 
 ```dart
 // Running this test shows you that it fails for input 21.
